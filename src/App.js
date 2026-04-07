@@ -58,13 +58,13 @@ function generateDays() {
   return arr;
 }
 
-const CHECKS_KEY = "sport_v4_checks";
-const WEIGHTS_KEY = "sport_v4_weights";
-const START_KEY = "sport_v4_start";
-const GOAL_KEY = "sport_v4_goal";
-const NOTES_KEY = "sport_v4_notes";
-const PIN_KEY = "sport_v4_pin";
-const CAL_KEY = "sport_v4_calories";
+const CHECKS_KEY = "sport_v5_checks";
+const WEIGHTS_KEY = "sport_v5_weights";
+const START_KEY = "sport_v5_start";
+const GOAL_KEY = "sport_v5_goal";
+const NOTES_KEY = "sport_v5_notes";
+const PIN_KEY = "sport_v5_pin";
+const CAL_KEY = "sport_v5_calories";
 
 function getStreak(checks) {
   let count = 0;
@@ -97,6 +97,32 @@ function estimateGoalDate(currentWeight, goalWeight) {
   });
 }
 
+function ProgressRing({ progress }) {
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(Math.max(progress, 0), 100) / 100) * circumference;
+
+  return (
+    <div className="ring-wrap">
+      <svg width="110" height="110" viewBox="0 0 110 110" className="ring-svg">
+        <circle cx="55" cy="55" r={radius} className="ring-track" />
+        <circle
+          cx="55"
+          cy="55"
+          r={radius}
+          className="ring-progress"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="ring-center">
+        <strong>{progress}%</strong>
+        <span>fait</span>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const days = useMemo(() => generateDays(), []);
   const [checks, setChecks] = useState({});
@@ -107,7 +133,7 @@ export default function App() {
   const [todayWeight, setTodayWeight] = useState("");
   const [todayCalories, setTodayCalories] = useState("");
   const [caloriesMap, setCaloriesMap] = useState({});
-  const [viewMode, setViewMode] = useState("today");
+  const [tab, setTab] = useState("today");
   const [pinInput, setPinInput] = useState("");
   const [newPin, setNewPin] = useState("");
   const [hasPin, setHasPin] = useState(false);
@@ -115,14 +141,10 @@ export default function App() {
 
   useEffect(() => {
     try {
-      const savedChecks = JSON.parse(localStorage.getItem(CHECKS_KEY) || "{}");
-      const savedWeights = JSON.parse(localStorage.getItem(WEIGHTS_KEY) || "{}");
-      const savedNotes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
-      const savedCalories = JSON.parse(localStorage.getItem(CAL_KEY) || "{}");
-      setChecks(savedChecks);
-      setWeights(savedWeights);
-      setNotes(savedNotes);
-      setCaloriesMap(savedCalories);
+      setChecks(JSON.parse(localStorage.getItem(CHECKS_KEY) || "{}"));
+      setWeights(JSON.parse(localStorage.getItem(WEIGHTS_KEY) || "{}"));
+      setNotes(JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"));
+      setCaloriesMap(JSON.parse(localStorage.getItem(CAL_KEY) || "{}"));
     } catch {}
 
     const savedStart = localStorage.getItem(START_KEY);
@@ -135,29 +157,12 @@ export default function App() {
     setIsUnlocked(!savedPin);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(CHECKS_KEY, JSON.stringify(checks));
-  }, [checks]);
-
-  useEffect(() => {
-    localStorage.setItem(WEIGHTS_KEY, JSON.stringify(weights));
-  }, [weights]);
-
-  useEffect(() => {
-    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-  }, [notes]);
-
-  useEffect(() => {
-    localStorage.setItem(CAL_KEY, JSON.stringify(caloriesMap));
-  }, [caloriesMap]);
-
-  useEffect(() => {
-    localStorage.setItem(START_KEY, startWeight);
-  }, [startWeight]);
-
-  useEffect(() => {
-    localStorage.setItem(GOAL_KEY, goalWeight);
-  }, [goalWeight]);
+  useEffect(() => { localStorage.setItem(CHECKS_KEY, JSON.stringify(checks)); }, [checks]);
+  useEffect(() => { localStorage.setItem(WEIGHTS_KEY, JSON.stringify(weights)); }, [weights]);
+  useEffect(() => { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); }, [notes]);
+  useEffect(() => { localStorage.setItem(CAL_KEY, JSON.stringify(caloriesMap)); }, [caloriesMap]);
+  useEffect(() => { localStorage.setItem(START_KEY, startWeight); }, [startWeight]);
+  useEffect(() => { localStorage.setItem(GOAL_KEY, goalWeight); }, [goalWeight]);
 
   const todayIso = isoDate(new Date());
   const todayData =
@@ -182,7 +187,6 @@ export default function App() {
   const kilosRemaining = currentWeight && goalWeightNum
     ? Math.max(0, Number((currentWeight - goalWeightNum).toFixed(1)))
     : 0;
-
   const projectedDate = estimateGoalDate(currentWeight, goalWeightNum);
 
   const recentWeights = sortedWeightDates.slice(-8).map((date) => ({
@@ -227,13 +231,19 @@ export default function App() {
     }
   };
 
+  const deficitStatus = caloriesMap[todayIso]
+    ? Number(caloriesMap[todayIso]) <= 2200
+      ? "✅ Probablement en déficit"
+      : "⚠️ Peut-être trop élevé"
+    : "— Pas encore renseigné";
+
   if (!isUnlocked) {
     return (
       <div className="page-shell center-shell">
         <div className="lock-card">
-          <div className="lock-badge">🔐 Privé</div>
-          <h1>Sport Tracker V4</h1>
-          <p>Entre ton code PIN pour accéder à ton suivi.</p>
+          <div className="lock-topline">MODE PRIVÉ</div>
+          <h1>Discipline Tracker</h1>
+          <p>Entre ton code PIN pour continuer.</p>
           <input
             type="password"
             value={pinInput}
@@ -260,189 +270,203 @@ export default function App() {
     );
   }
 
-  const deficitStatus = caloriesMap[todayIso]
-    ? Number(caloriesMap[todayIso]) <= 2200
-      ? "✅ Probablement en déficit"
-      : "⚠️ Peut-être trop élevé"
-    : "— Pas encore renseigné";
-
   return (
-    <div className="page-shell">
-      <div className="app-container">
-        <section className="hero-card">
+    <div className="page-shell app-dark">
+      <div className="phone-shell">
+        <header className="top-header">
           <div>
-            <div className="hero-kicker">Mission transformation</div>
-            <h1 className="hero-title">Objectif 70 kg</h1>
-            <p className="hero-text">Une seule mission par jour. Tu valides, tu avances.</p>
+            <div className="eyebrow">NO EXCUSES</div>
+            <h1>Discipline Tracker</h1>
           </div>
-          <div className="hero-side">
-            <div className="hero-pill">Streak : {streak} jour{streak > 1 ? "s" : ""}</div>
-            <div className="hero-pill soft">Progression : {progress}%</div>
-          </div>
-        </section>
+          <ProgressRing progress={progress} />
+        </header>
 
-        <section className="metrics-grid">
-          <div className="metric-card">
-            <span className="metric-label">Poids de départ</span>
-            <div className="metric-value">{startWeightNum || "--"} kg</div>
-          </div>
-          <div className="metric-card">
-            <span className="metric-label">Poids actuel</span>
-            <div className="metric-value">{currentWeight ? `${currentWeight} kg` : "--"}</div>
-          </div>
-          <div className="metric-card">
-            <span className="metric-label">Kilos perdus</span>
-            <div className="metric-value">-{kilosLost}</div>
-          </div>
-          <div className="metric-card">
-            <span className="metric-label">Reste à perdre</span>
-            <div className="metric-value">{currentWeight ? `${kilosRemaining} kg` : "--"}</div>
-          </div>
-        </section>
+        {tab === "today" && (
+          <main className="content">
+            <section className="hero-danger">
+              <div className="danger-line">MISSION DU JOUR</div>
+              <h2>{todayData.label}</h2>
+              <div className="focus-tag">{todayData.focus}</div>
+              <p>{todayData.workout}</p>
+            </section>
 
-        <section className="prediction-card">
-          <div>
-            <h3>Date estimée objectif</h3>
-            <p className="muted">Sur une base d'environ 0,75 kg perdu par semaine.</p>
-          </div>
-          <div className="prediction-date">{projectedDate}</div>
-        </section>
-
-        <section className="today-card">
-          <div className="today-head">
-            <div>
-              <div className="day-badge">Jour {todayData.id}</div>
-              <h2 className="today-title">{todayData.label}</h2>
-              <div className="focus-pill">{todayData.focus}</div>
-              <p className="today-workout">{todayData.workout}</p>
-            </div>
-          </div>
-
-          <button onClick={toggleToday} className={`validate-button ${checks[todayData.dateIso] ? "done" : ""}`}>
-            {checks[todayData.dateIso] ? "✅ JOURNÉE VALIDÉE" : "🔥 VALIDER MA JOURNÉE"}
-          </button>
-
-          <textarea
-            className="input note-area"
-            value={notes[todayData.dateIso] || ""}
-            onChange={(e) => setNotes((prev) => ({ ...prev, [todayData.dateIso]: e.target.value }))}
-            placeholder="Note du jour : sensations, temps de course, nombre de tractions..."
-          />
-        </section>
-
-        <section className="quick-grid">
-          <div className="sub-card">
-            <h3>Poids du jour</h3>
-            <div className="inline">
-              <input
-                className="input"
-                type="number"
-                step="0.1"
-                value={todayWeight}
-                onChange={(e) => setTodayWeight(e.target.value)}
-                placeholder="Ex. 79.4"
-              />
-              <button onClick={saveTodayWeight} className="primary-button">Enregistrer</button>
-            </div>
-          </div>
-
-          <div className="sub-card">
-            <h3>Calories du jour</h3>
-            <div className="inline">
-              <input
-                className="input"
-                type="number"
-                value={todayCalories}
-                onChange={(e) => setTodayCalories(e.target.value)}
-                placeholder="Ex. 2100"
-              />
-              <button onClick={saveTodayCalories} className="primary-button">Sauver</button>
-            </div>
-            <p className="status-line">{deficitStatus}</p>
-          </div>
-        </section>
-
-        <section className="chart-card">
-          <div className="chart-head">
-            <h3>Courbe de poids</h3>
-            <div className="toggle-group">
-              <button className={viewMode === "today" ? "tab active" : "tab"} onClick={() => setViewMode("today")}>Jour</button>
-              <button className={viewMode === "calendar" ? "tab active" : "tab"} onClick={() => setViewMode("calendar")}>Calendrier</button>
-            </div>
-          </div>
-
-          {recentWeights.length > 1 ? (
-            <>
-              <svg viewBox="0 0 320 140" className="chart-svg" preserveAspectRatio="none">
-                <polyline
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  points={recentWeights.map((w, i) => {
-                    const x = (i / Math.max(recentWeights.length - 1, 1)) * 300 + 10;
-                    const y = 120 - (((w.value - minWeight) / weightRange) * 100);
-                    return `${x},${y}`;
-                  }).join(" ")}
-                />
-                {recentWeights.map((w, i) => {
-                  const x = (i / Math.max(recentWeights.length - 1, 1)) * 300 + 10;
-                  const y = 120 - (((w.value - minWeight) / weightRange) * 100);
-                  return <circle key={w.date} cx={x} cy={y} r="4" fill="currentColor" />;
-                })}
-              </svg>
-              <div className="chart-labels">
-                {recentWeights.map((w) => (
-                  <div key={w.date} className="chart-label-item">
-                    <span>{w.value} kg</span>
-                    <small>{w.date.slice(5)}</small>
-                  </div>
-                ))}
+            <section className="stats-strip">
+              <div className="mini-card red">
+                <span>Streak</span>
+                <strong>{streak}</strong>
               </div>
-            </>
-          ) : (
-            <p className="muted">Ajoute au moins 2 poids pour afficher la courbe.</p>
-          )}
-        </section>
+              <div className="mini-card">
+                <span>Perdus</span>
+                <strong>-{kilosLost} kg</strong>
+              </div>
+              <div className="mini-card">
+                <span>Reste</span>
+                <strong>{currentWeight ? `${kilosRemaining} kg` : "--"}</strong>
+              </div>
+            </section>
 
-        {viewMode === "calendar" && (
-          <section className="calendar-card">
-            <div className="calendar-grid">
-              {days.map((day) => {
-                const isDone = !!checks[day.dateIso];
-                const isToday = day.dateIso === todayIso;
-                return (
-                  <button
-                    key={day.dateIso}
-                    onClick={() => setChecks((prev) => ({ ...prev, [day.dateIso]: !prev[day.dateIso] }))}
-                    className={`calendar-item ${isDone ? "done" : ""} ${isToday ? "today" : ""}`}
-                  >
-                    <div className="calendar-top">
-                      <span className="mini-badge">J{day.id}</span>
-                      <span className={isDone ? "pill success" : "pill muted-pill"}>
-                        {isDone ? "Fait" : "À faire"}
-                      </span>
-                    </div>
-                    <div className="calendar-date">{day.label}</div>
-                    <div className="calendar-focus">{day.focus}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+            <button onClick={toggleToday} className={`validate-btn ${checks[todayData.dateIso] ? "done" : ""}`}>
+              {checks[todayData.dateIso] ? "✅ JOUR VALIDÉ" : "🔥 VALIDER MA JOURNÉE"}
+            </button>
+
+            <section className="card-dark">
+              <h3>Note du jour</h3>
+              <textarea
+                className="input note-area dark-input"
+                value={notes[todayData.dateIso] || ""}
+                onChange={(e) => setNotes((prev) => ({ ...prev, [todayData.dateIso]: e.target.value }))}
+                placeholder="Tractions, sensations, course, moral..."
+              />
+            </section>
+
+            <section className="double-grid">
+              <div className="card-dark">
+                <h3>Poids du jour</h3>
+                <div className="stack">
+                  <input
+                    className="input dark-input"
+                    type="number"
+                    step="0.1"
+                    value={todayWeight}
+                    onChange={(e) => setTodayWeight(e.target.value)}
+                    placeholder="Ex. 79.4"
+                  />
+                  <button onClick={saveTodayWeight} className="secondary-button">Enregistrer</button>
+                </div>
+              </div>
+
+              <div className="card-dark">
+                <h3>Calories</h3>
+                <div className="stack">
+                  <input
+                    className="input dark-input"
+                    type="number"
+                    value={todayCalories}
+                    onChange={(e) => setTodayCalories(e.target.value)}
+                    placeholder="Ex. 2100"
+                  />
+                  <button onClick={saveTodayCalories} className="secondary-button">Sauver</button>
+                </div>
+                <div className="status-red">{deficitStatus}</div>
+              </div>
+            </section>
+
+            <section className="card-dark">
+              <h3>Projection</h3>
+              <p className="muted-light">Objectif visé : {goalWeightNum || 70} kg</p>
+              <div className="projection-date">{projectedDate}</div>
+            </section>
+          </main>
         )}
 
-        <section className="settings-card">
-          <div className="settings-grid">
-            <div>
-              <span className="metric-label">Poids de départ</span>
-              <input className="input" type="number" step="0.1" value={startWeight} onChange={(e) => setStartWeight(e.target.value)} />
-            </div>
-            <div>
-              <span className="metric-label">Objectif</span>
-              <input className="input" type="number" step="0.1" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} />
-            </div>
-          </div>
-        </section>
+        {tab === "calendar" && (
+          <main className="content">
+            <section className="card-dark">
+              <h3>Calendrier global</h3>
+              <div className="calendar-grid">
+                {days.map((day) => {
+                  const isDone = !!checks[day.dateIso];
+                  const isToday = day.dateIso === todayIso;
+                  return (
+                    <button
+                      key={day.dateIso}
+                      onClick={() => setChecks((prev) => ({ ...prev, [day.dateIso]: !prev[day.dateIso] }))}
+                      className={`calendar-item ${isDone ? "done" : ""} ${isToday ? "today" : ""}`}
+                    >
+                      <div className="calendar-top">
+                        <span className="mini-badge">J{day.id}</span>
+                        <span className={isDone ? "pill success" : "pill muted-pill"}>
+                          {isDone ? "Fait" : "À faire"}
+                        </span>
+                      </div>
+                      <div className="calendar-date">{day.label}</div>
+                      <div className="calendar-focus">{day.focus}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </main>
+        )}
+
+        {tab === "progress" && (
+          <main className="content">
+            <section className="stats-strip big">
+              <div className="mini-card red">
+                <span>Départ</span>
+                <strong>{startWeightNum || "--"} kg</strong>
+              </div>
+              <div className="mini-card">
+                <span>Actuel</span>
+                <strong>{currentWeight ? `${currentWeight} kg` : "--"}</strong>
+              </div>
+              <div className="mini-card">
+                <span>Objectif</span>
+                <strong>{goalWeightNum || 70} kg</strong>
+              </div>
+            </section>
+
+            <section className="card-dark">
+              <h3>Courbe de poids</h3>
+              {recentWeights.length > 1 ? (
+                <>
+                  <svg viewBox="0 0 320 160" className="chart-svg" preserveAspectRatio="none">
+                    <polyline
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      points={recentWeights.map((w, i) => {
+                        const x = (i / Math.max(recentWeights.length - 1, 1)) * 300 + 10;
+                        const y = 130 - (((w.value - minWeight) / weightRange) * 110);
+                        return `${x},${y}`;
+                      }).join(" ")}
+                    />
+                    {recentWeights.map((w, i) => {
+                      const x = (i / Math.max(recentWeights.length - 1, 1)) * 300 + 10;
+                      const y = 130 - (((w.value - minWeight) / weightRange) * 110);
+                      return <circle key={w.date} cx={x} cy={y} r="5" fill="currentColor" />;
+                    })}
+                  </svg>
+                  <div className="chart-labels">
+                    {recentWeights.map((w) => (
+                      <div key={w.date} className="chart-label-item">
+                        <span>{w.value} kg</span>
+                        <small>{w.date.slice(5)}</small>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="muted-light">Ajoute au moins 2 poids pour afficher la courbe.</p>
+              )}
+            </section>
+
+            <section className="card-dark">
+              <h3>Réglages</h3>
+              <div className="stack">
+                <label className="label-light">Poids de départ</label>
+                <input className="input dark-input" type="number" step="0.1" value={startWeight} onChange={(e) => setStartWeight(e.target.value)} />
+                <label className="label-light">Objectif</label>
+                <input className="input dark-input" type="number" step="0.1" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} />
+              </div>
+            </section>
+          </main>
+        )}
+
+        <nav className="bottom-nav">
+          <button className={tab === "today" ? "nav-item active" : "nav-item"} onClick={() => setTab("today")}>
+            <span>🔥</span>
+            <small>Jour</small>
+          </button>
+          <button className={tab === "calendar" ? "nav-item active" : "nav-item"} onClick={() => setTab("calendar")}>
+            <span>📅</span>
+            <small>Calendrier</small>
+          </button>
+          <button className={tab === "progress" ? "nav-item active" : "nav-item"} onClick={() => setTab("progress")}>
+            <span>📈</span>
+            <small>Progrès</small>
+          </button>
+        </nav>
       </div>
     </div>
   );
