@@ -28,19 +28,19 @@ function generateDays() {
     let focus = "";
 
     if (weekday === 1 || weekday === 4) {
-      focus = "Haut du corps";
+      focus = "Upper Body";
       workout = "Tractions 4x max • Pompes 4x max • Dips 3x10 • Gainage 3x45 sec";
     } else if (weekday === 2 || weekday === 5) {
       focus = "Cardio";
       workout = "Course 30 à 40 min + 10 min d'abdos";
     } else if (weekday === 3) {
-      focus = "Activité légère";
+      focus = "Light Activity";
       workout = "10 000 pas + gainage 3x1 min";
     } else if (weekday === 6) {
-      focus = "Full body";
+      focus = "Full Body";
       workout = "Circuit x4 : tractions • pompes • squats • gainage";
     } else {
-      focus = "Repos actif";
+      focus = "Active Rest";
       workout = "Marche légère + mobilité";
     }
 
@@ -59,13 +59,14 @@ function generateDays() {
   return arr;
 }
 
-const CHECKS_KEY = "sport_v6_checks";
-const WEIGHTS_KEY = "sport_v6_weights";
-const START_KEY = "sport_v6_start";
-const GOAL_KEY = "sport_v6_goal";
-const NOTES_KEY = "sport_v6_notes";
-const PIN_KEY = "sport_v6_pin";
-const CAL_KEY = "sport_v6_calories";
+const CHECKS_KEY = "system_v7_checks";
+const WEIGHTS_KEY = "system_v7_weights";
+const START_KEY = "system_v7_start";
+const GOAL_KEY = "system_v7_goal";
+const NOTES_KEY = "system_v7_notes";
+const PIN_KEY = "system_v7_pin";
+const CAL_KEY = "system_v7_calories";
+const XP_KEY = "system_v7_xp";
 
 function getStreak(checks) {
   let count = 0;
@@ -97,6 +98,47 @@ function estimateGoalDate(currentWeight, goalWeight) {
   });
 }
 
+function getLevelData(xp) {
+  const levels = [
+    { level: 1, title: "Awakened", need: 0 },
+    { level: 2, title: "Fighter", need: 80 },
+    { level: 3, title: "Hunter", need: 180 },
+    { level: 4, title: "Elite Hunter", need: 320 },
+    { level: 5, title: "Commander", need: 500 },
+    { level: 6, title: "Monarch", need: 740 },
+  ];
+
+  let current = levels[0];
+  let next = null;
+
+  for (let i = 0; i < levels.length; i++) {
+    if (xp >= levels[i].need) current = levels[i];
+    if (xp < levels[i].need) {
+      next = levels[i];
+      break;
+    }
+  }
+
+  if (!next) {
+    return { level: current.level, title: current.title, progress: 100, currentXp: xp, nextNeed: xp };
+  }
+
+  const previousNeed = current.need;
+  const range = next.need - previousNeed;
+  const earned = xp - previousNeed;
+  const progress = Math.max(0, Math.min(100, Math.round((earned / range) * 100)));
+
+  return { level: current.level, title: current.title, progress, currentXp: xp, nextNeed: next.need };
+}
+
+function XpBar({ progress }) {
+  return (
+    <div className="xp-bar">
+      <div className="xp-fill" style={{ width: `${progress}%` }} />
+    </div>
+  );
+}
+
 function ProgressRing({ progress }) {
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
@@ -107,7 +149,9 @@ function ProgressRing({ progress }) {
       <svg width="110" height="110" viewBox="0 0 110 110" className="ring-svg" aria-hidden="true">
         <circle cx="55" cy="55" r={radius} className="ring-track" />
         <circle
-          cx="55" cy="55" r={radius}
+          cx="55"
+          cy="55"
+          r={radius}
           className="ring-progress"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -115,7 +159,7 @@ function ProgressRing({ progress }) {
       </svg>
       <div className="ring-center">
         <strong>{progress}%</strong>
-        <span>fait</span>
+        <span>SYNC</span>
       </div>
     </div>
   );
@@ -131,12 +175,13 @@ export default function App() {
   const [todayWeight, setTodayWeight] = useState("");
   const [todayCalories, setTodayCalories] = useState("");
   const [caloriesMap, setCaloriesMap] = useState({});
-  const [tab, setTab] = useState("today");
+  const [tab, setTab] = useState("quest");
   const [pinInput, setPinInput] = useState("");
   const [newPin, setNewPin] = useState("");
   const [hasPin, setHasPin] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [showValidatedFlash, setShowValidatedFlash] = useState(false);
+  const [showReward, setShowReward] = useState(false);
+  const [xp, setXp] = useState(0);
 
   useEffect(() => {
     try {
@@ -145,13 +190,13 @@ export default function App() {
       setNotes(JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"));
       setCaloriesMap(JSON.parse(localStorage.getItem(CAL_KEY) || "{}"));
     } catch {}
-
     const savedStart = localStorage.getItem(START_KEY);
     const savedGoal = localStorage.getItem(GOAL_KEY);
+    const savedPin = localStorage.getItem(PIN_KEY);
+    const savedXp = Number(localStorage.getItem(XP_KEY) || "0");
     if (savedStart) setStartWeight(savedStart);
     if (savedGoal) setGoalWeight(savedGoal);
-
-    const savedPin = localStorage.getItem(PIN_KEY);
+    setXp(savedXp);
     setHasPin(!!savedPin);
     setIsUnlocked(!savedPin);
   }, []);
@@ -162,9 +207,11 @@ export default function App() {
   useEffect(() => { localStorage.setItem(CAL_KEY, JSON.stringify(caloriesMap)); }, [caloriesMap]);
   useEffect(() => { localStorage.setItem(START_KEY, startWeight); }, [startWeight]);
   useEffect(() => { localStorage.setItem(GOAL_KEY, goalWeight); }, [goalWeight]);
+  useEffect(() => { localStorage.setItem(XP_KEY, String(xp)); }, [xp]);
 
   const todayIso = isoDate(new Date());
   const todayData = days.find((d) => d.dateIso === todayIso) || days.find((d) => !checks[d.dateIso]) || days[0];
+  const alreadyDone = !!checks[todayData.dateIso];
 
   const completed = Object.values(checks).filter(Boolean).length;
   const streak = getStreak(checks);
@@ -172,7 +219,6 @@ export default function App() {
 
   const sortedWeightDates = Object.keys(weights).sort();
   const currentWeight = sortedWeightDates.length ? Number(weights[sortedWeightDates[sortedWeightDates.length - 1]]) : null;
-
   const startWeightNum = Number(String(startWeight).replace(",", ".")) || 0;
   const goalWeightNum = Number(String(goalWeight).replace(",", ".")) || 0;
   const kilosLost = currentWeight && startWeightNum ? Math.max(0, Number((startWeightNum - currentWeight).toFixed(1))) : 0;
@@ -184,12 +230,16 @@ export default function App() {
   const maxWeight = recentWeights.length ? Math.max(...recentWeights.map((w) => w.value)) : 0;
   const weightRange = maxWeight - minWeight || 1;
 
+  const levelData = getLevelData(xp);
+
   const toggleToday = () => {
     const nextValue = !checks[todayData.dateIso];
     setChecks((prev) => ({ ...prev, [todayData.dateIso]: nextValue }));
     if (nextValue) {
-      setShowValidatedFlash(true);
-      setTimeout(() => setShowValidatedFlash(false), 1600);
+      const bonus = streak >= 3 ? 15 : 10;
+      setXp((prev) => prev + bonus);
+      setShowReward(true);
+      setTimeout(() => setShowReward(false), 1800);
     }
   };
 
@@ -225,31 +275,30 @@ export default function App() {
 
   const deficitStatus = caloriesMap[todayIso]
     ? Number(caloriesMap[todayIso]) <= 2200
-      ? "✅ Probablement en déficit"
-      : "⚠️ Peut-être trop élevé"
-    : "— Pas encore renseigné";
+      ? "STATUS : CALORIC DEFICIT"
+      : "STATUS : HIGH INTAKE"
+    : "STATUS : NO DATA";
 
-  const motivationalMessage = (() => {
-    if (currentWeight && currentWeight <= goalWeightNum) return "Objectif atteint. Continue à tenir.";
-    if (streak >= 7) return "Tu es lancé. Ne casse pas la chaîne.";
-    if (streak >= 3) return "Très bon rythme. Continue comme ça.";
-    if (completed === 0) return "Première mission : lancer la machine.";
-    return `Encore ${kilosRemaining || "--"} kg. Continue.`;
+  const systemMessage = (() => {
+    if (alreadyDone) return "Quest completed. XP secured.";
+    if (streak >= 7) return "Consistency detected. Rank up possible.";
+    if (completed === 0) return "System initialized. First quest required.";
+    return `Target remaining: ${kilosRemaining || "--"} kg`;
   })();
 
   if (!isUnlocked) {
     return (
       <div className="page-shell center-shell">
         <div className="lock-card">
-          <div className="lock-topline">MODE PRIVÉ</div>
-          <h1>Discipline Tracker</h1>
-          <p>Entre ton code PIN pour continuer.</p>
-          <input type="password" value={pinInput} onChange={(e) => setPinInput(e.target.value)} placeholder="Code PIN" className="input" />
-          <button onClick={handleUnlock} className="primary-button full">Déverrouiller</button>
+          <div className="system-line">SYSTEM ACCESS</div>
+          <h1>Discipline System</h1>
+          <p>Enter PIN to unlock the interface.</p>
+          <input type="password" value={pinInput} onChange={(e) => setPinInput(e.target.value)} placeholder="PIN CODE" className="input system-input" />
+          <button onClick={handleUnlock} className="system-button full">UNLOCK</button>
           {!hasPin && (
             <div className="pin-create">
-              <input type="password" value={newPin} onChange={(e) => setNewPin(e.target.value)} placeholder="Créer un PIN" className="input" />
-              <button onClick={handlePinCreate} className="secondary-button full">Créer mon PIN</button>
+              <input type="password" value={newPin} onChange={(e) => setNewPin(e.target.value)} placeholder="CREATE PIN" className="input system-input" />
+              <button onClick={handlePinCreate} className="ghost-button full">CREATE ACCESS</button>
             </div>
           )}
         </div>
@@ -258,68 +307,84 @@ export default function App() {
   }
 
   return (
-    <div className="page-shell app-dark">
+    <div className="page-shell app-system">
       <div className="phone-shell">
         <header className="top-header">
           <div>
-            <div className="eyebrow">NO EXCUSES</div>
-            <h1>Discipline Tracker</h1>
-            <p className="header-subtext">{motivationalMessage}</p>
+            <div className="system-line">SYSTEM ACTIVE</div>
+            <h1>Discipline System</h1>
+            <p className="header-subtext">{systemMessage}</p>
+            <div className="level-box">
+              <span>LV.{levelData.level}</span>
+              <strong>{levelData.title}</strong>
+            </div>
+            <XpBar progress={levelData.progress} />
+            <div className="xp-text">{levelData.currentXp} XP / {levelData.nextNeed} XP</div>
           </div>
           <ProgressRing progress={progress} />
         </header>
 
-        {showValidatedFlash && <div className="validated-flash">✔️ JOUR VALIDÉ</div>}
+        {showReward && <div className="reward-flash">+XP ACQUIRED</div>}
 
-        {tab === "today" && (
+        {tab === "quest" && (
           <main className="content">
-            <section className="hero-danger fade-up">
-              <div className="danger-line">MISSION DU JOUR</div>
+            <section className="system-card glow fade-up">
+              <div className="card-line">DAILY QUEST</div>
               <h2>{todayData.label}</h2>
               <div className="focus-tag">{todayData.focus}</div>
               <p>{todayData.workout}</p>
             </section>
 
             <section className="stats-strip fade-up delay-1">
-              <div className="mini-card red streak-card">
-                <span>Streak</span>
+              <div className="mini-card accent">
+                <span>STREAK</span>
                 <strong>{streak}</strong>
-                <div className="streak-bar"><div className="streak-fill" style={{ width: `${Math.min((streak / 7) * 100, 100)}%` }} /></div>
               </div>
-              <div className="mini-card"><span>Perdus</span><strong>-{kilosLost} kg</strong></div>
-              <div className="mini-card"><span>Reste</span><strong>{currentWeight ? `${kilosRemaining} kg` : "--"}</strong></div>
+              <div className="mini-card">
+                <span>LOST</span>
+                <strong>-{kilosLost} kg</strong>
+              </div>
+              <div className="mini-card">
+                <span>REMAIN</span>
+                <strong>{currentWeight ? `${kilosRemaining} kg` : "--"}</strong>
+              </div>
             </section>
 
-            <button onClick={toggleToday} className={`validate-btn pulse-on-hover ${checks[todayData.dateIso] ? "done" : ""}`}>
-              {checks[todayData.dateIso] ? "✅ JOUR VALIDÉ" : "🔥 VALIDER MA JOURNÉE"}
+            <button onClick={toggleToday} className={`quest-button ${alreadyDone ? "done" : ""}`}>
+              {alreadyDone ? "QUEST CLEARED" : "COMPLETE QUEST"}
             </button>
 
-            <section className="card-dark fade-up delay-2">
-              <h3>Note du jour</h3>
-              <textarea className="input note-area dark-input" value={notes[todayData.dateIso] || ""} onChange={(e) => setNotes((prev) => ({ ...prev, [todayData.dateIso]: e.target.value }))} placeholder="Tractions, sensations, course, moral..." />
+            <section className="system-card fade-up delay-2">
+              <h3>QUEST LOG</h3>
+              <textarea
+                className="input system-input note-area"
+                value={notes[todayData.dateIso] || ""}
+                onChange={(e) => setNotes((prev) => ({ ...prev, [todayData.dateIso]: e.target.value }))}
+                placeholder="Tractions, sensations, course, moral..."
+              />
             </section>
 
             <section className="double-grid fade-up delay-3">
-              <div className="card-dark">
-                <h3>Poids du jour</h3>
+              <div className="system-card small">
+                <h3>BODY MASS</h3>
                 <div className="stack">
-                  <input className="input dark-input" type="number" step="0.1" value={todayWeight} onChange={(e) => setTodayWeight(e.target.value)} placeholder="Ex. 79.4" />
-                  <button onClick={saveTodayWeight} className="secondary-button soft-press">Enregistrer</button>
+                  <input className="input system-input" type="number" step="0.1" value={todayWeight} onChange={(e) => setTodayWeight(e.target.value)} placeholder="79.4" />
+                  <button onClick={saveTodayWeight} className="ghost-button">SAVE MASS</button>
                 </div>
               </div>
-              <div className="card-dark">
-                <h3>Calories</h3>
+              <div className="system-card small">
+                <h3>CALORIE LOG</h3>
                 <div className="stack">
-                  <input className="input dark-input" type="number" value={todayCalories} onChange={(e) => setTodayCalories(e.target.value)} placeholder="Ex. 2100" />
-                  <button onClick={saveTodayCalories} className="secondary-button soft-press">Sauver</button>
+                  <input className="input system-input" type="number" value={todayCalories} onChange={(e) => setTodayCalories(e.target.value)} placeholder="2100" />
+                  <button onClick={saveTodayCalories} className="ghost-button">SAVE DATA</button>
                 </div>
-                <div className="status-red">{deficitStatus}</div>
+                <div className="status-blue">{deficitStatus}</div>
               </div>
             </section>
 
-            <section className="card-dark fade-up delay-4">
-              <h3>Projection</h3>
-              <p className="muted-light">Objectif visé : {goalWeightNum || 70} kg</p>
+            <section className="system-card fade-up delay-4">
+              <h3>FUTURE PROJECTION</h3>
+              <p className="muted-light">TARGET : {goalWeightNum || 70} KG</p>
               <div className="projection-date">{projectedDate}</div>
             </section>
           </main>
@@ -327,8 +392,8 @@ export default function App() {
 
         {tab === "calendar" && (
           <main className="content">
-            <section className="card-dark fade-up">
-              <h3>Calendrier global</h3>
+            <section className="system-card fade-up">
+              <h3>QUEST BOARD</h3>
               <div className="calendar-grid">
                 {days.map((day) => {
                   const isDone = !!checks[day.dateIso];
@@ -337,7 +402,7 @@ export default function App() {
                     <button key={day.dateIso} onClick={() => setChecks((prev) => ({ ...prev, [day.dateIso]: !prev[day.dateIso] }))} className={`calendar-item ${isDone ? "done" : ""} ${isToday ? "today" : ""}`}>
                       <div className="calendar-top">
                         <span className="mini-badge">J{day.id}</span>
-                        <span className={isDone ? "pill success" : "pill muted-pill"}>{isDone ? "Fait" : "À faire"}</span>
+                        <span className={isDone ? "pill success" : "pill muted-pill"}>{isDone ? "DONE" : "PENDING"}</span>
                       </div>
                       <div className="calendar-date">{day.label}</div>
                       <div className="calendar-focus">{day.focus}</div>
@@ -349,16 +414,16 @@ export default function App() {
           </main>
         )}
 
-        {tab === "progress" && (
+        {tab === "stats" && (
           <main className="content">
             <section className="stats-strip big fade-up">
-              <div className="mini-card red"><span>Départ</span><strong>{startWeightNum || "--"} kg</strong></div>
-              <div className="mini-card"><span>Actuel</span><strong>{currentWeight ? `${currentWeight} kg` : "--"}</strong></div>
-              <div className="mini-card"><span>Objectif</span><strong>{goalWeightNum || 70} kg</strong></div>
+              <div className="mini-card accent"><span>START</span><strong>{startWeightNum || "--"} kg</strong></div>
+              <div className="mini-card"><span>CURRENT</span><strong>{currentWeight ? `${currentWeight} kg` : "--"}</strong></div>
+              <div className="mini-card"><span>TARGET</span><strong>{goalWeightNum || 70} kg</strong></div>
             </section>
 
-            <section className="card-dark fade-up delay-1">
-              <h3>Courbe de poids</h3>
+            <section className="system-card fade-up delay-1">
+              <h3>WEIGHT GRAPH</h3>
               {recentWeights.length > 1 ? (
                 <>
                   <svg viewBox="0 0 320 160" className="chart-svg" preserveAspectRatio="none">
@@ -384,22 +449,22 @@ export default function App() {
               )}
             </section>
 
-            <section className="card-dark fade-up delay-2">
-              <h3>Réglages</h3>
+            <section className="system-card fade-up delay-2">
+              <h3>SYSTEM SETTINGS</h3>
               <div className="stack">
-                <label className="label-light">Poids de départ</label>
-                <input className="input dark-input" type="number" step="0.1" value={startWeight} onChange={(e) => setStartWeight(e.target.value)} />
-                <label className="label-light">Objectif</label>
-                <input className="input dark-input" type="number" step="0.1" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} />
+                <label className="label-light">START WEIGHT</label>
+                <input className="input system-input" type="number" step="0.1" value={startWeight} onChange={(e) => setStartWeight(e.target.value)} />
+                <label className="label-light">TARGET WEIGHT</label>
+                <input className="input system-input" type="number" step="0.1" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} />
               </div>
             </section>
           </main>
         )}
 
         <nav className="bottom-nav">
-          <button className={tab === "today" ? "nav-item active" : "nav-item"} onClick={() => setTab("today")}><span>🔥</span><small>Jour</small></button>
-          <button className={tab === "calendar" ? "nav-item active" : "nav-item"} onClick={() => setTab("calendar")}><span>📅</span><small>Calendrier</small></button>
-          <button className={tab === "progress" ? "nav-item active" : "nav-item"} onClick={() => setTab("progress")}><span>📈</span><small>Progrès</small></button>
+          <button className={tab === "quest" ? "nav-item active" : "nav-item"} onClick={() => setTab("quest")}><span>◈</span><small>Quest</small></button>
+          <button className={tab === "calendar" ? "nav-item active" : "nav-item"} onClick={() => setTab("calendar")}><span>▦</span><small>Board</small></button>
+          <button className={tab === "stats" ? "nav-item active" : "nav-item"} onClick={() => setTab("stats")}><span>△</span><small>Stats</small></button>
         </nav>
       </div>
     </div>
