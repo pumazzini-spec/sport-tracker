@@ -416,7 +416,7 @@ export default function App() {
                 <h3>MASSE CORPORELLE</h3>
                 <div className="stack">
                   <input className="input system-input" type="number" step="0.1" value={todayWeight} onChange={(e) => setTodayWeight(e.target.value)} placeholder="79.4" />
-                  <button onClick={saveTodayWeight} className="ghost-button">SAUVER</button>
+                  <button onClick={saveTodayWeight} className="ghost-button">SAUVEGARDER</button>
                 </div>
               </div>
               <div className="system-card small system-frame">
@@ -427,7 +427,7 @@ export default function App() {
                 <h3>JOURNAL CALORIES</h3>
                 <div className="stack">
                   <input className="input system-input" type="number" value={todayCalories} onChange={(e) => setTodayCalories(e.target.value)} placeholder="2100" />
-                  <button onClick={saveTodayCalories} className="ghost-button">SAUVER</button>
+                  <button onClick={saveTodayCalories} className="ghost-button">SAUVEGARDER</button>
                 </div>
                 <div className="status-blue">{statusCalories}</div>
               </div>
