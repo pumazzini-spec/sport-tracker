@@ -104,7 +104,7 @@ function ProgressRing({ progress }) {
 
   return (
     <div className="ring-wrap">
-      <svg width="110" height="110" viewBox="0 0 110 110" className="ring-svg">
+      <svg width="110" height="110" viewBox="0 0 110 110" className="ring-svg" aria-hidden="true">
         <circle cx="55" cy="55" r={radius} className="ring-track" />
         <circle
           cx="55"

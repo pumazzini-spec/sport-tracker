@@ -197,6 +197,9 @@ body {
   flex: 0 0 auto;
 }
 .ring-svg {
+  width: 110px;
+  height: 110px;
+  display: block;
   transform: rotate(-90deg);
 }
 .ring-track {
@@ -213,18 +216,31 @@ body {
 }
 .ring-center {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  line-height: 1;
+  pointer-events: none;
 }
 .ring-center strong {
+  display: block;
   font-size: 22px;
+  line-height: 1;
+  margin: 0;
 }
 .ring-center span {
+  display: block;
+  margin-top: 4px;
   color: #a1a1aa;
   font-size: 11px;
+  line-height: 1;
 }
 .mini-badge {
   background: #ef4444;
@@ -333,10 +349,6 @@ body {
 .nav-item small {
   font-size: 11px;
 }
-.toggle-group {
-  display: flex;
-  gap: 8px;
-}
 .lock-card {
   max-width: 430px;
   width: 100%;
@@ -356,6 +368,17 @@ body {
   .ring-wrap {
     width: 96px;
     height: 96px;
+  }
+  .ring-svg {
+    width: 96px;
+    height: 96px;
+  }
+  .ring-center {
+    width: 64px;
+    height: 64px;
+  }
+  .ring-center strong {
+    font-size: 20px;
   }
   .double-grid, .stats-strip {
     grid-template-columns: 1fr;
