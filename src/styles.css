@@ -6,46 +6,50 @@ body {
   color: #171717;
 }
 .page-shell { min-height: 100vh; padding: 16px; }
-.lock-bg { display: flex; align-items: center; justify-content: center; }
+.center-shell { display: flex; align-items: center; justify-content: center; }
 .app-container { max-width: 1120px; margin: 0 auto; }
-.hero-card {
-  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-  color: white;
-  border-radius: 28px;
-  padding: 24px;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  margin-bottom: 18px;
-}
-.hero-kicker { font-size: 13px; opacity: 0.8; margin-bottom: 8px; }
-.hero-title { font-size: 38px; margin: 0 0 8px; }
-.hero-text { margin: 0; color: rgba(255,255,255,0.82); }
-.hero-side { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
-.hero-pill {
-  background: rgba(255,255,255,0.14);
-  padding: 10px 14px;
-  border-radius: 999px;
-  font-size: 14px;
-  backdrop-filter: blur(8px);
-}
-.hero-pill-soft { background: rgba(59, 130, 246, 0.2); }
 
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-.metric-card, .chart-card, .panel-card, .calendar-card, .day-card, .lock-card {
+.hero-card, .metric-card, .prediction-card, .today-card, .sub-card, .chart-card, .calendar-card, .settings-card, .lock-card {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 24px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.05);
 }
-.metric-card { padding: 18px; }
+.hero-card {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+  color: white;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.hero-kicker { font-size: 13px; opacity: 0.8; margin-bottom: 8px; }
+.hero-title { font-size: 38px; margin: 0 0 8px; }
+.hero-text { margin: 0; color: rgba(255,255,255,0.85); }
+.hero-side { display: flex; flex-wrap: wrap; gap: 10px; }
+.hero-pill {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.14);
+  font-size: 14px;
+}
+.hero-pill.soft { background: rgba(59,130,246,0.25); }
+
+.metrics-grid, .quick-grid, .settings-grid {
+  display: grid;
+  gap: 14px;
+}
+.metrics-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+.quick-grid, .settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.metric-card, .sub-card, .settings-card, .prediction-card, .today-card, .chart-card, .calendar-card {
+  padding: 18px;
+}
 .metric-label {
   display: block;
   font-size: 13px;
@@ -57,97 +61,92 @@ body {
   font-weight: 700;
   color: #111827;
 }
-.chart-card, .panel-card, .calendar-card { padding: 20px; margin-bottom: 18px; }
-.section-head, .panel-top, .controls-row, .day-card-top, .dual-inputs, .discipline-grid {
+.prediction-card {
   display: flex;
-  gap: 14px;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
 }
-.panel-top, .controls-row, .day-card-top { align-items: flex-start; }
-.panel-title, .lock-title { margin: 0 0 8px; }
-.lock-card { max-width: 460px; width: 100%; padding: 24px; }
-.lock-badge {
+.prediction-date {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2563eb;
+}
+.today-card { margin-bottom: 18px; }
+.today-title { margin: 12px 0 8px; font-size: 28px; text-transform: capitalize; }
+.day-badge, .focus-pill, .mini-badge, .pill {
   display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.day-badge, .mini-badge {
   background: #111827;
   color: white;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  margin-bottom: 12px;
+  font-weight: 700;
 }
-.lock-title { font-size: 32px; }
-.lock-text { color: #666; margin-bottom: 16px; }
-.lock-input, .soft-input, .note-area {
+.focus-pill { background: #e5e7eb; color: #374151; margin-top: 8px; }
+.today-workout { font-size: 17px; color: #374151; margin-top: 16px; }
+.validate-button {
+  width: 100%;
+  margin-top: 18px;
+  border: none;
+  border-radius: 18px;
+  padding: 20px;
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #2563eb, #111827);
+  color: white;
+  cursor: pointer;
+}
+.validate-button.done {
+  background: linear-gradient(90deg, #16a34a, #166534);
+}
+.input {
   width: 100%;
   border: 1px solid #d4d4d8;
   border-radius: 16px;
   padding: 12px 14px;
-  background: white;
   font: inherit;
-}
-.note-area { min-height: 96px; resize: vertical; margin-top: 16px; }
-.primary-button, .tab-button {
-  border: 1px solid #d4d4d8;
   background: white;
+}
+.note-area {
+  min-height: 110px;
+  resize: vertical;
+  margin-top: 16px;
+}
+.inline, .chart-head, .calendar-top {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+.primary-button, .secondary-button, .tab {
+  border: 1px solid #d4d4d8;
   border-radius: 16px;
   padding: 10px 14px;
-  cursor: pointer;
   font: inherit;
-  transition: 0.2s ease;
+  cursor: pointer;
+  background: white;
 }
-.primary-button:hover, .tab-button:hover { transform: translateY(-1px); }
 .primary-button {
   background: #111827;
   color: white;
   border-color: #111827;
 }
-.primary-button.full { width: 100%; }
-.tab-button.active {
-  background: #111827;
-  color: white;
-  border-color: #111827;
+.secondary-button {
+  background: #f3f4f6;
 }
-.button-group, .pin-group, .legend-row, .badges-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.progress-track {
-  height: 14px;
-  background: #e5e7eb;
-  border-radius: 999px;
-  overflow: hidden;
-  margin: 18px 0;
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #2563eb, #111827);
-}
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-.sub-card {
-  border: 1px solid #e5e7eb;
-  background: #fafafa;
-  border-radius: 24px;
-  padding: 16px;
-}
-.info-line { margin-top: 12px; font-size: 14px; color: #374151; }
-.mini-metric {
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-  margin-top: 6px;
-}
+.full { width: 100%; }
+.status-line { margin-top: 12px; font-weight: 600; }
+.chart-card { margin: 18px 0; }
 .chart-svg {
   width: 100%;
   height: 160px;
   color: #2563eb;
   background: linear-gradient(180deg, rgba(37,99,235,0.06), rgba(37,99,235,0.01));
   border-radius: 18px;
+  margin-top: 14px;
 }
 .chart-labels {
   display: grid;
@@ -164,6 +163,13 @@ body {
 }
 .chart-label-item span { display: block; font-weight: 600; font-size: 13px; }
 .chart-label-item small { color: #6b7280; }
+.toggle-group { display: flex; gap: 8px; }
+.tab.active {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+.calendar-card { margin-bottom: 18px; }
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -180,58 +186,38 @@ body {
 }
 .calendar-item.done { background: #dcfce7; border-color: #86efac; }
 .calendar-item.today { outline: 3px solid #93c5fd; }
-.calendar-item-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
 .calendar-date { margin-top: 12px; font-size: 14px; font-weight: 600; text-transform: capitalize; }
 .calendar-focus { margin-top: 8px; font-size: 12px; color: #666; }
-
-.days-list { display: grid; gap: 12px; }
-.day-card { padding: 18px; }
-.day-card.done { background: #f0fdf4; border-color: #86efac; }
-.day-main { flex: 1; }
-.day-title { margin: 14px 0 8px; font-size: 20px; text-transform: capitalize; }
-.day-text { color: #374151; margin: 0; }
-.check-wrap { width: 210px; }
-.check-box {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #d4d4d8;
-  border-radius: 16px;
-  padding: 12px;
-  cursor: pointer;
-}
-.check-box.checked { background: #dcfce7; border-color: #86efac; }
-
-.dark-badge, .pill {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-.dark-badge { background: #111827; color: white; font-weight: 700; }
 .pill.success { background: #dcfce7; color: #166534; }
 .pill.muted-pill { background: #e5e7eb; color: #374151; }
-.pill.info { background: #dbeafe; color: #1d4ed8; }
+
+.lock-card {
+  max-width: 460px;
+  width: 100%;
+  padding: 24px;
+}
+.lock-badge {
+  display: inline-block;
+  background: #111827;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.pin-create { margin-top: 16px; display: grid; gap: 10px; }
 
 .muted { color: #6b7280; }
-.tiny { font-size: 12px; }
 
 @media (max-width: 900px) {
   .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quick-grid, .settings-grid { grid-template-columns: 1fr; }
   .calendar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .info-grid { grid-template-columns: 1fr; }
-  .hero-card, .panel-top, .controls-row, .day-card-top, .discipline-grid, .dual-inputs, .section-head {
-    flex-direction: column;
-  }
-  .check-wrap { width: 100%; }
+  .hero-card, .prediction-card, .inline, .chart-head { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 640px) {
-  .hero-title, .lock-title { font-size: 28px; }
+  .hero-title { font-size: 28px; }
   .metrics-grid { grid-template-columns: 1fr; }
   .calendar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .today-title { font-size: 24px; }
 }
